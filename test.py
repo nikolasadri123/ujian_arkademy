@@ -1,52 +1,102 @@
-import pytest
-from ethereum import tester
-from eth_utils import encode_hex
-from tests.fixtures import *
+#Simple SignUp and LogIn Program
+import sqlite3
+import sys
+
+#creating the database to add things into
+db = sqlite3.connect("users.db")
+cursor = db.cursor()
+
+    #drop the table to remake it
+#cursor.execute('''DROP TABLE users''')
+
+    #create table
+#cursor.execute('''CREATE TABLE users (number INT, username STRING, password STRING, security STRING)''')
+
+#cursor.execute('''INSERT INTO users (number,username,password,security) VALUES (1,"rhianmack","1234","Storkey")''')
+#cursor.execute('''INSERT INTO users (number,username,password,security) VALUES (2,"yasminS","2342","Sunthankar")''')
+
+#========================================================================================================================
+def LogIn():
+    c = False
+    while c == False:
+        a = False
+        while a == False:
+            User = input("Username: ")
+            wPass = input("Password: ")
+
+            cursor.execute('''SELECT * FROM users''')
+            for row in cursor:
+                username = row[1]
+                if User == username:
+                    a = True
+                    break
+                else:
+                    print("Incorrect Username, please try again (error 2)")
+
+#checking if the password matches that chosen username
+        b = False
+        while b == False:
+            cursor.execute('''SELECT password FROM users WHERE username = ?''',(User,))
+            for row in cursor:
+                if wPass == str(row[0]):
+                    b = True
+                    c = True
+                    break
+                else:
+                    print("Incorrect Username, please try again (error 1)")
+                    b = True
+                    
+                    
+        
+    print("whoop")
+
+#=========================================================================================================================
+def SignUp():
+    Nuser = input("Enter your username: ")
+
+    #checking they entered the correct password
+    d = False
+    while d == False:
+        Npass = input("Enter your new password: ")
+        confirm = input("Please confirm your password: ")
+        if Npass == confirm:
+            d = True
+        else:
+            d = False
+
+    Nsecurity = input("Security Question: Please enter your mothers maiden name: ")
+
+    #generating the number so it adds onto the end of the numbers already, wouldnt be efficent with lots of data
+    cursor.execute('''SELECT number FROM users''')
+    for row in cursor:
+        number = row[0]
+        print(number)
+    number = number + 1
+
+    cursor.execute('''INSERT INTO users (number,username,password,security) VALUES (?,?,?,?)''',(number,Nuser,Npass,Nsecurity))
+    db.commit()
+    
+#=========================================================================================================================
+def Menu():
+    print("======================")
+    menu = input("Welcome! Would you like to: \n\
+    1. Sign Up\n\
+    2. Log In\n")
+    e = False
+    while e == False:
+        if menu == "1":
+            e = True
+            SignUp()
+        elif menu == "2":
+            e = True
+            LogIn()
+        else:
+            menu = input("Please enter '1' or '2': ")
+    
+#=========================================================================================================================
+#Main body of the program starts here
+
+Menu()
 
 
-def test_token_fallback_deposit0(owner, wallet, token, contract):
-    with pytest.raises(tester.TransactionFailed):
-        token.transact({'from': wallet}).transfer(contract.address, 0, encode_hex(bytearray()))
-    token.transact({'from': wallet}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-def test_token_fallback_untrusted_token(owner, wallet, token, contract, get_token_contract):
-    other_token = get_token_contract([10 ** 26, 'CustomToken2', 'TKN', 18])
-    other_token.transact({'from': owner}).transfer(wallet, 1000)
-    assert other_token.call().balanceOf(wallet) == 1000
-
-    with pytest.raises(tester.TransactionFailed):
-        other_token.transact({'from': wallet}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-    assert token.call().balanceOf(wallet) >= 1000
-    token.transact({'from': wallet}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-
-def test_token_fallback_not_wallet(owner, wallet, get_accounts, token, contract):
-    (A, B) = get_accounts(2)
-    assert token.call().balanceOf(owner) >= 1000
-    with pytest.raises(tester.TransactionFailed):
-        token.transact({'from': owner}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-    token.transact({'from': owner}).transfer(A, 1000)
-    assert token.call().balanceOf(A) == 1000
-    with pytest.raises(tester.TransactionFailed):
-        token.transact({'from': A}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-
-def test_token_fallback_state(owner, wallet, token, contract):
-    token.transact({'from': wallet}).transfer(contract.address, 1000, encode_hex(bytearray()))
-    assert token.call().balanceOf(contract.address) == 1000
-
-
-def test_token_fallback_event(owner, wallet, token, contract, event_handler):
-    ev_handler = event_handler(contract)
-
-    txn_hash = token.transact({'from': wallet}).transfer(contract.address, 1000, encode_hex(bytearray()))
-
-    ev_handler.add(txn_hash, contract_events['fund'], checkFundEvent(1000))
-    ev_handler.check()
-
-
-def test_token_fallback_print_gas_cost(wallet, token, contract, print_gas):
-    txn_hash = token.transact({'from': wallet}).transfer(contract.address, 10 ** 20, encode_hex(bytearray()))
-    print_gas(txn_hash, 'fund contract with 100 TKN')
+            
